@@ -1,0 +1,288 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <!-- Standard Meta -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+
+    <title>Detailed Investment Info</title>
+
+    <script src="dist/jquery-3.0.0.min.js"></script>
+
+    <script src="dist/semantic.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="dist/semantic.min.css" />
+
+    <script src="dist/components/visibility.js"></script>
+    <script src="dist/components/sidebar.js"></script>
+    <script src="dist/components/transition.js"></script>
+
+    <!-->
+    <link rel="stylesheet" type="text/css" href="dist/components/item.css"/>
+    <link rel="stylesheet" type="text/css" href="dist/components/button.css"/>
+    <link rel="stylesheet" type="text/css" href="dist/components/label.css"/>
+    <link rel="stylesheet" type="text/css" href="dist/components/icon.css"/>
+    <!-->
+    <link rel="stylesheet" type="text/css" href="item-meta.css" />
+
+    <style type="text/css">
+        .hidden.menu {
+            display: none;
+        }
+
+        .masthead .logo.item img {
+            margin-right: 1em;
+        }
+
+        .ui.vertical.stripe .floated.image {
+            clear: both;
+        }
+
+        .masthead .ui.menu .ui.button {
+            margin-left: 0.5em;
+        }
+
+        @media only screen and (max-width: 700px) {
+            .ui.fixed.menu {
+                display: none !important;
+            }
+
+            .secondary.pointing.menu .item,
+            .secondary.pointing.menu .menu {
+                display: none;
+            }
+
+            .secondary.pointing.menu .toc.item {
+                display: block;
+            }
+        }
+    </style>
+
+    <script src="tools.js"></script>
+    <script>
+        function createContentChild(title, content, parent) {
+            var item = createChild("div", "item", parent);
+            createChild("div", "header", item, title);
+            createChild("div", "description", item, content);
+            return item;
+        }
+        function parseResponse(response) {
+            var addHere = document.getElementById("invest");
+            var result = JSON.parse(response);
+            if (result.info != "investment found successfully") {
+                alert(result.info);
+                var ele = document.createElement("p");
+                ele.innerHTML = "Error finding details about given investment!";
+                addHere.appendChild(ele);
+                return;
+            }
+            var data = result.data;
+            var name = data.name.capitalize();
+
+            // create HTML item
+            var item = createChild("div", "item", addHere);
+
+            var imgEle = createChild("div", "ui medium image", item);
+            var img = document.createElement("img");
+            var logo = null;
+            for (var j = 0; j < data.media.length; j++) {
+                if (data.media[j].hasOwnProperty("logo_url")) {
+                    var logo = data.media[j].logo_url;
+                }
+            }
+            if (logo == null) { // no 'logo_url' under 'media' field
+                var logo = data.logo_url;
+            }
+            img.setAttribute("src", logo);
+            img.setAttribute("alt", name);
+            imgEle.appendChild(img);
+
+            item = createChild("div", "item", addHere);
+            var contentEle = createChild("div", "content", item);
+            var header = createChild("div", "header", contentEle);
+            createText(header, name);
+            var meta = createChild("div", "meta", contentEle);
+
+            var descEle = createChild("div", "ui list", contentEle);
+
+            createContentChild("General Description", data.site_description, descEle);
+
+            var requirements = createContentChild("Requirements", null, descEle);
+            var reqList = createChild("div", "list", requirements);
+            createTextElement("li", "<b>Citizenship:</b> " + data.citizenship, reqList);
+            var str = "Has to be ";
+            if (data.age.max != 0) {
+                str += "at most " + data.age.max.toString();
+            }
+            if (data.age.min != 0) {
+                str += "at least " + data.age.min.toString();
+            }
+            str += " years old."
+            //if (data.hasOwnProperty())
+            createTextElement("li", "<b>Age:</b> "+str, reqList);
+            if (data.limitations.length > 0) {
+                var limits = createContentChild("Limitations", "Please note the following limitations before applying:", descEle);
+                var limitList = document.createElement("ul");
+                limits.appendChild(limitList);
+                for (var i=0; i<data.limitations.length; i++) {
+                    limitList.appendChild(createTextElement("li", data.limitations[i]));
+                }
+            }
+
+            if (data.steps.length > 0) {
+                var steps = createContentChild("Usage Steps", null, descEle);
+                var stepList = document.createElement("ul");
+                steps.appendChild(stepList);
+                for (var i = 0; i < data.steps.length; i++) {
+                    stepList.appendChild(createTextElement("li", data.steps[i]));
+                }
+            }
+
+            var planEle = createContentChild("Plans", null, descEle);
+            var planList = createChild("div", "ui divided grid", planEle);
+            if (data.plan.plans.length > 0) {
+                var plans = data.plan.plans;
+                for (var i = 0; i < plans.length; i++) {
+                    var p = createChild("div", "four wide column", planList);
+                    str = "";
+                    if (plans[i].hasOwnProperty("title")) {
+                        str += plans[i].title + "<br>";
+                    }
+                    if (plans[i].term == 1) {
+                        str += "<b>Duration:</b> " + plans[i].term.toString() + " year<br>";
+                    } else {
+                        str += "<b>Duration:</b> " + plans[i].term.toString() + " years<br>";
+                    }                    
+                    str += "<b>Risk:</b> " + plans[i].risk + "<br>";
+                    str += "<b>Yield:</b> " + plans[i].yield + "%<br>";
+                    p.innerHTML = str;
+                }
+            } else {
+                var plans = data.plan.ranges;
+                for (var i = 0; i < plans.length; i++) {
+                    // TODO: Add a field about the number of plans available
+                    var p = createChild("div", "six wide column", planList);
+                    str = "";
+                    str += "<b>Duration:</b> " + plans[i].tfrom.toString() + " ~ " + plans[i].tto.toString() + " years<br>";
+                    //str += "<b>Risk:</b> " + plans[i].risk + "<br>";
+                    str += "<b>Yield:</b> " + plans[i].yfrom.toString() + "% ~ " + plans[i].yto.toString() + "%<br>";
+                    p.innerHTML = str;
+                }
+            }
+
+            var button = createChild("div", "ui secondary button", contentEle);
+            createText(button, "Add to Portfolio");
+        }
+
+        function getParam(sname) {
+            var params = location.search.substr(location.search.indexOf("?") + 1);
+            var sval = "";
+            params = params.split("&");
+            // split param and value into individual pieces
+            for (var i = 0; i < params.length; i++) {
+                temp = params[i].split("=");
+                if ([temp[0]] == sname) { sval = temp[1]; }
+            }
+            return sval;
+        }
+
+        $(document)
+          .ready(function () {
+
+              // fix menu when passed
+              $('.masthead')
+                .visibility({
+                    once: false,
+                    onBottomPassed: function () {
+                        $('.fixed.menu').transition('fade in');
+                    },
+                    onBottomPassedReverse: function () {
+                        $('.fixed.menu').transition('fade out');
+                    }
+                })
+              ;
+
+              // create sidebar and attach to menu open
+              $('.ui.sidebar')
+                .sidebar('attach events', '.toc.item')
+              ;
+
+          })
+        ;
+                
+        window.onload = getInfo;
+        var id = getParam("item");
+        function getInfo() {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4) {
+                    if (xhr.status == 200) {
+                        var response = xhr.responseText;//.replace(/\\/g, "/");
+                        parseResponse(response);
+                    }
+                }
+            }
+            xhr.open("GET", "http://node-coincaptain.rhcloud.com/query/"+id, true);
+            xhr.send();
+        }
+    </script>
+
+</head>
+<body>
+
+    <!-- Following Menu -->
+    <div class="ui large top fixed hidden menu">
+        <div class="ui container">
+            <a class="item" href="index.html">Home</a>
+            <a class="active item" href="browser.html">Browse</a>
+            <a class="item">Portfolio</a>
+            <a class="item">Checkout</a>
+            <div class="right menu">
+                <div class="item">
+                    <a class="ui button">Log in</a>
+                </div>
+                <div class="item">
+                    <a class="ui primary button">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Menu -->
+    <div class="ui vertical inverted thin sidebar menu">
+        <a class="item" href="index.html">Home</a>
+        <a class="active item" href="browser.html">Browse</a>
+        <a class="item">Portfolio</a>
+        <a class="item">Checkout</a>
+        <a class="item">Login</a>
+        <a class="item">Signup</a>
+    </div>
+
+    <!-- Page Contents -->
+    <div class="pusher">
+        <div class="ui inverted vertical masthead center aligned segment">
+            <div class="ui container">
+                <div class="ui large secondary inverted pointing menu">
+                    <a class="toc item">
+                        <i class="sidebar icon"></i>
+                    </a>
+                    <a class="item" href="index.html">Home</a>
+                    <a class="active item" href="browser.html">Browse</a>
+                    <a class="item">Portfolio</a>
+                    <a class="item">Checkout</a>
+                    <div class="right item">
+                        <a class="ui inverted button">Log in</a>
+                        <a class="ui inverted button">Sign Up</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ui text container" style="margin-top:20px;">
+            <div class="ui items" id="invest"></div>
+        </div>
+
+    </div>
+</body>
+</html>
