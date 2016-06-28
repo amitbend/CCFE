@@ -17,6 +17,7 @@
     <script src="dist/components/visibility.js"></script>
     <script src="dist/components/sidebar.js"></script>
     <script src="dist/components/transition.js"></script>
+    <!--<script src="dist/components/button.js"></script>-->
 
     <!-->
     <link rel="stylesheet" type="text/css" href="dist/components/item.css"/>
@@ -27,7 +28,12 @@
     <link rel="stylesheet" type="text/css" href="item-meta.css"/>
 
     <style type="text/css">
-
+        #invest > .item{
+            padding: 1.2em 0.5em 1.2em 0.5em ;
+        }
+        .ui.items > .item > .content p {
+            padding: 0.2em 0em 0.4em 0em ;
+        }
         .hidden.menu {
           display: none;
         }
@@ -144,8 +150,10 @@
 
                 var button = createLink("ui primary button", "details.html?item=" + data._id, contentEle);
                 createText(button, "Details");
-                button = createChild("div", "ui secondary button", contentEle);
+                button = createChild("div", "ui    basic  button left labeled icon toggle ", contentEle);
+
                 createText(button, "Add to Portfolio");
+                createChild("i","plus icon",button)
             }
         }
 
@@ -248,7 +256,7 @@
     <button onclick="showExtras()" id="showExtrasButton">Show/Hide Extras</button>
 
     <div class="ui text container" id="mainItems">
-        <div class="ui items" id="invest"></div>
+        <div class="ui items celled list" id="invest"></div>
     </div>
 
 
@@ -359,8 +367,6 @@
         </div>
     </div>
 </div>
-
-
 
 </body>
 </html>
