@@ -1,0 +1,366 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <!-- Standard Meta -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+
+    <title>Investment Browser</title>
+
+    <script src="dist/jquery-3.0.0.min.js"></script>
+
+    <script src="dist/semantic.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="dist/semantic.min.css"/>
+    
+    <script src="dist/components/visibility.js"></script>
+    <script src="dist/components/sidebar.js"></script>
+    <script src="dist/components/transition.js"></script>
+
+    <!-->
+    <link rel="stylesheet" type="text/css" href="dist/components/item.css"/>
+    <link rel="stylesheet" type="text/css" href="dist/components/button.css"/>
+    <link rel="stylesheet" type="text/css" href="dist/components/label.css"/>
+    <link rel="stylesheet" type="text/css" href="dist/components/icon.css"/>
+    <!-->
+    <link rel="stylesheet" type="text/css" href="item-meta.css"/>
+
+    <style type="text/css">
+
+        .hidden.menu {
+          display: none;
+        }
+        .masthead .logo.item img {
+          margin-right: 1em;
+        }
+        .ui.vertical.stripe .floated.image {
+          clear: both;
+        }
+        .masthead .ui.menu .ui.button {
+          margin-left: 0.5em;
+        }
+
+        @media only screen and (max-width: 700px) {
+          .ui.fixed.menu {
+            display: none !important;
+          }
+          .secondary.pointing.menu .item,
+          .secondary.pointing.menu .menu {
+            display: none;
+          }
+          .secondary.pointing.menu .toc.item {
+            display: block;
+          }
+        }
+    </style>
+
+    <script src="tools.js"></script>
+    <script>
+        function getData() {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4) {
+                    if (xhr.status == 200) {
+                        var response = xhr.responseText;//.replace(/\\/g, "/");
+                        parseResponse(response);
+                    }
+                }
+            }
+            xhr.open("GET", "http://node-coincaptain.rhcloud.com/all", true);
+            xhr.send();
+        }
+        function parseResponse(response) {
+            var addHere = document.getElementById("invest");
+            var result = JSON.parse(response);
+            for (var i = 0; i < result.data.length; i++) {
+                // current item
+                var data = result.data[i];
+                var name = data.name.capitalize();
+                // available plans
+                var plans = data.plan;
+                var optNum;
+                var minTime = 1000;
+                var maxTime = -1;
+                if (plans.plans.length > 0) {
+                    optNum = plans.plans.length;
+                    for (var j = 0; j < plans.plans.length; j++) {
+                        var t = plans.plans[j].term;
+                        if (minTime > t) minTime = t;
+                        if (maxTime < t) maxTime = t;
+                    }
+                } else {
+                    optNum = plans.ranges.length; // TODO: need to add a field detailing how many plans are there
+                    minTime = plans.ranges[0].tfrom; // TODO: fix this!
+                    maxTime = plans.ranges[0].tto;
+                }
+
+                // create HTML item
+                var item = createChild("div", "item", addHere);
+
+                var imgEle = createChild("div", "ui small image", item);
+                var img = document.createElement("img");
+                var logo = null;
+                for (var j = 0; j < data.media.length; j++) {
+                    if (data.media[j].hasOwnProperty("logo_url")) {
+                        var logo = data.media[j].logo_url;
+                    }
+                }
+                if (logo == null) { // no 'logo_url' under 'media' field
+                    var logo = data.logo_url;
+                }
+                img.setAttribute("src", logo);
+                img.setAttribute("alt", name);
+                imgEle.appendChild(img);
+
+                var contentEle = createChild("div", "content", item);
+                var header = createChild("div", "header", contentEle);
+                createText(header, name);
+                var meta = createChild("div", "meta", contentEle);
+
+                var risk;
+                // TODO: change RISK to be according to the data
+                if (i % 3 == 0) {
+                    risk = createChild("span", "tooltip low risk", meta);
+                    createText(risk, "Low risk");
+                } else if (i % 3 == 1) {
+                    risk = createChild("span", "tooltip medium risk", meta);
+                    createText(risk, "Medium risk");
+                } else if (i % 3 == 2) {
+                    risk = createChild("span", "tooltip high risk", meta);
+                    createText(risk, "High risk");
+                }
+
+                var options = createChild("span", "tooltip options", meta);
+                createText(options, optNum.toString() + " Options");
+                var time = createChild("span", "tooltip time", meta);
+                createText(time, minTime.toString() + "~" + maxTime.toString() + " Years");
+
+                var descriptionEle = createChild("div", "description", contentEle);
+                var desc = document.createElement("p");
+                desc.innerHTML = data.site_description;
+                //createText(desc, data.site_description);
+                descriptionEle.appendChild(desc);
+
+                var button = createLink("ui primary button", "details.html?item=" + data._id, contentEle);
+                createText(button, "Details");
+                button = createChild("div", "ui secondary button", contentEle);
+                createText(button, "Add to Portfolio");
+            }
+        }
+
+      $(document)
+        .ready(function () {
+
+            // fix menu when passed
+            $('.masthead')
+              .visibility({
+                  once: false,
+                  onBottomPassed: function () {
+                      $('.fixed.menu').transition('fade in');
+                  },
+                  onBottomPassedReverse: function () {
+                      $('.fixed.menu').transition('fade out');
+                  }
+              })
+            ;
+
+            // create sidebar and attach to menu open
+            $('.ui.sidebar')
+              .sidebar('attach events', '.toc.item')
+            ;
+
+            getData();
+        })
+      ;
+    </script>
+
+</head>
+<body>
+
+<!-- Following Menu -->
+<div class="ui large top fixed hidden menu">
+    <div class="ui container">
+        <a class="item" href="index.html">Home</a>
+        <a class="active item">Browse</a>
+        <a class="item">Portfolio</a>
+        <a class="item">Checkout</a>
+        <div class="right menu">
+            <div class="item">
+                <a class="ui button">Log in</a>
+            </div>
+            <div class="item">
+                <a class="ui primary button">Sign Up</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sidebar Menu -->
+<div class="ui vertical inverted thin sidebar menu">
+    <a class="item" href="index.html">Home</a>
+    <a class="active item">Browse</a>
+    <a class="item">Portfolio</a>
+    <a class="item">Checkout</a>
+    <a class="item">Login</a>
+    <a class="item">Signup</a>
+</div>
+
+<!-- Page Contents -->
+<div class="pusher">
+    <div class="ui inverted vertical masthead center aligned segment">
+        <div class="ui container">
+            <div class="ui large secondary inverted pointing menu">
+                <a class="toc item">
+                    <i class="sidebar icon"></i>
+                </a>
+                <a class="item" href="index.html">Home</a>
+                <a class="active item">Browse</a>
+                <a class="item">Portfolio</a>
+                <a class="item">Checkout</a>
+                <div class="right item">
+                    <a class="ui inverted button">Log in</a>
+                    <a class="ui inverted button">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function showMain() {
+            document.getElementById("mainItems").style.display = "block";
+            document.getElementById("showMainButton").setAttribute("onclick", "javascript: hideMain()");
+        }
+        function hideMain() {
+            document.getElementById("mainItems").style.display = "none";
+            document.getElementById("showMainButton").setAttribute("onclick", "javascript: showMain()");
+        }
+        function showExtras() {
+            document.getElementById("hiddenExtras").style.display = "block";
+            document.getElementById("showExtrasButton").setAttribute("onclick", "javascript: hideExtras()");
+        }
+        function hideExtras() {
+            document.getElementById("hiddenExtras").style.display = "none";
+            document.getElementById("showExtrasButton").setAttribute("onclick", "javascript: showExtras()");
+        }
+    </script>
+
+    <button onclick="hideMain()" id="showMainButton">Show/Hide Main Info</button>
+    <button onclick="showExtras()" id="showExtrasButton">Show/Hide Extras</button>
+
+    <div class="ui text container" id="mainItems">
+        <div class="ui items" id="invest"></div>
+    </div>
+
+
+    <!-- Some extra stuff for reference -->
+    <div id="hiddenExtras" style="display:none;">
+        <div class="ui text container">
+            <button class="ui icon button">
+                <i class="cloud icon"></i>
+            </button>
+            <button class="ui facebook mini button">
+                <i class="facebook icon"></i>
+                Facebook
+            </button>
+            <div class="ui labeled button" tabindex="0">
+                <div class="ui button">
+                    <i class="heart icon"></i> Like
+                </div>
+                <a class="ui basic label">
+                    2,048
+                </a>
+            </div>
+            <br></br>
+            <button class="ui primary button">
+                Save
+            </button>
+            <button class="ui secondary button">
+                Okay
+            </button>
+            <button class="ui button">
+                Cancel
+            </button>
+            <div class="ui left labeled button" tabindex="0">
+                <a class="ui basic right pointing label">
+                    2,048
+                </a>
+                <div class="ui button">
+                    <i class="heart icon"></i> Like
+                </div>
+            </div>
+        </div>
+
+        <div class="ui section divider"></div>
+
+        <div class="ui text container">
+            <div class="ui items">
+                <div class="item">
+                    <div class="ui small image">
+                        <img src="media/bank-small.jpg" alt="National Bank" />
+                    </div>
+                    <div class="content">
+                        <div class="header">Bank of Goodville</div>
+                        <div class="meta">
+                            <span class="low risk">Low risk</span>
+                            <span class="medium risk">Medium risk</span>
+                            <span class="high risk">High risk</span>
+                            <span class="options">2 Options</span>
+                            <span class="time">1 Month</span>
+                        </div>
+                        <div class="description">
+                            <p>blah blah blah</p>
+                        </div>
+                        <button class="ui secondary button">Add to Portfolio</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ui card">
+                <div class="content">
+                    <div class="header">Bank of Goodville</div>
+                </div>
+                <div class="content">
+                    <div class="meta">
+                        <span class="right floated time">2 days ago</span>
+                        <span class="category">Animals</span>
+                    </div>
+                    <h4 class="ui sub header">Activity</h4>
+                    <div class="ui small feed">
+                        <div class="ui small image">
+                            <img src="media/bank-small.jpg" alt="National Bank" />
+                        </div>
+                        <div class="event">
+                            <div class="content">
+                                <div class="summary">
+                                    <a>Elliot Fu</a> added <a>Jenny Hess</a> to the project
+                                </div>
+                            </div>
+                        </div>
+                        <div class="event">
+                            <div class="content">
+                                <div class="summary">
+                                    <a>Stevie Feliciano</a> was added as an <a>Administrator</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="event">
+                            <div class="content">
+                                <div class="summary">
+                                    <a>Helen Troy</a> added two pictures
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="extra content">
+                    <button class="ui button">Join Project</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+</body>
+</html>
