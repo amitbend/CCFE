@@ -57,6 +57,7 @@
 
     <script src="tools.js"></script>
     <script>
+        // force https: if (window.location.protocol != "https:") window.location.href = "https:" + window.location.href.substring(window.location.protocol.length);
         function getData() {
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function () {
@@ -67,7 +68,11 @@
                     }
                 }
             }
-            xhr.open("GET", "https://node-coincaptain.rhcloud.com/all", true);
+            if (window.location.protocol == "https:") {
+                xhr.open("GET", "https://node-coincaptain.rhcloud.com/all", true);
+            } else { // http
+                xhr.open("GET", "http://node-coincaptain.rhcloud.com/all", true);
+            }            
             xhr.send();
         }
         function parseResponse(response) {
@@ -144,8 +149,24 @@
 
                 var button = createLink("ui primary button", "details.html?item=" + data._id, contentEle);
                 createText(button, "Details");
-                button = createChild("div", "ui secondary button", contentEle);
+                button = createChild("button", "ui blue basic toggle button right labeled icon ", contentEle);
+                button.style.marginLeft = "5px";
                 createText(button, "Add to Portfolio");
+                createChild("i", "plus icon", button)
+                /*
+                var func = function (btn) {
+                    btn.innerText = "In Portfolio";
+                    btn.className = btn.className + " disabled";
+                    btn.removeAttribute("click");
+                }
+                if (button.addEventListener) {  // all browsers except IE before version 9
+                    button.addEventListener("click", function () { func(button); }, false);
+                } else {
+                    if (button.attachEvent) {   // IE before version 9
+                        button.attachEvent("click", function () { func(button); }, false);
+                    }
+                }
+                */
             }
         }
 
@@ -248,7 +269,7 @@
     <button onclick="showExtras()" id="showExtrasButton">Show/Hide Extras</button>
 
     <div class="ui text container" id="mainItems">
-        <div class="ui items" id="invest"></div>
+        <div class="ui divided items" id="invest"></div>
     </div>
 
 

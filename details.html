@@ -171,8 +171,10 @@
                 }
             }
 
-            var button = createChild("div", "ui secondary button", contentEle);
+            var button = createChild("button", "ui large black basic button right labeled icon toggle", contentEle);
+            button.style.marginTop = "10px";
             createText(button, "Add to Portfolio");
+            createChild("i", "plus icon", button)
         }
 
         function getParam(sname) {
@@ -223,7 +225,11 @@
                     }
                 }
             }
-            xhr.open("GET", "http://node-coincaptain.rhcloud.com/query/"+id, true);
+            if (window.location.protocol == "https:") {
+                xhr.open("GET", "https://node-coincaptain.rhcloud.com/query/" + id, true);
+            } else { // http
+                xhr.open("GET", "http://node-coincaptain.rhcloud.com/query/" + id, true);
+            }
             xhr.send();
         }
     </script>
